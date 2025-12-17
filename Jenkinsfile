@@ -4,10 +4,11 @@ pipeline {
     environment {
         PROJECT_NAME = "fastapi-mysql-devops"
         DOCKER_COMPOSE_FILE = "docker-compose.yml"
-        GIT_REPO = "https://github.com/YOUR_USERNAME/fastapi-mysql-devops.git"
+        GIT_REPO = "https://github.com/varsha2176/fastapi-mysql-devops.git"
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 echo '🔄 Checking out code from repository...'
@@ -18,15 +19,18 @@ pipeline {
         stage('Environment Check') {
             steps {
                 echo '🔍 Checking environment...'
-                sh '''
-                    echo "Docker version:"
-                    docker --version
-                    echo "Docker Compose version:"
-                    docker-compose --version
-                    echo "Current directory:"
-                    pwd
-                    echo "Files in directory:"
-                    ls -la
+                bat '''
+                echo Docker version:
+                docker --version
+
+                echo Docker Compose version:
+                docker-compose --version
+
+                echo Current directory:
+                cd
+
+                echo Files in directory:
+                dir
                 '''
             }
         }
@@ -34,9 +38,9 @@ pipeline {
         stage('Cleanup Old Containers') {
             steps {
                 echo '🧹 Cleaning up old containers...'
-                sh '''
-                    docker-compose down || true
-                    docker system prune -f || true
+                bat '''
+                docker-compose down
+                docker system prune -f
                 '''
             }
         }
@@ -44,25 +48,23 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 echo '🏗️ Building Docker images...'
-                sh 'docker-compose build --no-cache'
+                bat 'docker-compose build --no-cache'
             }
         }
 
         stage('Run Tests') {
             steps {
                 echo '🧪 Running tests...'
-                sh '''
-                    # Start services
-                    docker-compose up -d
-                    
-                    # Wait for services to be ready
-                    sleep 30
-                    
-                    # Test API endpoint
-                    curl -f http://localhost:8000/ || exit 1
-                    curl -f http://localhost:8000/health || exit 1
-                    
-                    echo "✅ Tests passed!"
+                bat '''
+                docker-compose up -d
+
+                echo Waiting for services to be ready...
+                timeout /t 30 /nobreak
+
+                curl http://localhost:8000/ || exit /b 1
+                curl http://localhost:8000/health || exit /b 1
+
+                echo Tests passed!
                 '''
             }
         }
@@ -70,10 +72,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo '🚀 Deploying application...'
-                sh '''
-                    docker-compose down
-                    docker-compose up -d
-                    echo "✅ Deployment complete!"
+                bat '''
+                docker-compose down
+                docker-compose up -d
+                echo Deployment complete!
                 '''
             }
         }
@@ -81,11 +83,11 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 echo '✅ Verifying deployment...'
-                sh '''
-                    sleep 20
-                    docker-compose ps
-                    curl -f http://localhost:8000/health || exit 1
-                    echo "✅ Application is running successfully!"
+                bat '''
+                timeout /t 20 /nobreak
+                docker-compose ps
+                curl http://localhost:8000/health || exit /b 1
+                echo Application is running successfully!
                 '''
             }
         }
@@ -95,13 +97,15 @@ pipeline {
         success {
             echo '✅ Pipeline completed successfully!'
         }
+
         failure {
             echo '❌ Pipeline failed!'
-            sh 'docker-compose logs'
+            bat 'docker-compose logs'
         }
+
         always {
             echo '🔍 Showing running containers...'
-            sh 'docker ps'
+            bat 'docker ps'
         }
     }
 }
