@@ -1,34 +1,20 @@
--- Create database if not exists
-CREATE DATABASE IF NOT EXISTS fastapidb;
+CREATE DATABASE IF NOT EXISTS testdb;
+USE testdb;
 
--- Use the database
-USE fastapidb;
-
--- Create users table
+-- Users table with more fields for admin panel
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    role ENUM('admin', 'user', 'moderator') DEFAULT 'user',
+    status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Insert sample data
-INSERT INTO users (name, email) VALUES 
-    ('John Doe', 'john@example.com'),
-    ('Jane Smith', 'jane@example.com'),
-    ('Bob Johnson', 'bob@example.com')
-ON DUPLICATE KEY UPDATE name=name;
-
--- Create a test table
-CREATE TABLE IF NOT EXISTS app_info (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    app_name VARCHAR(255) NOT NULL,
-    version VARCHAR(50) NOT NULL,
-    deployment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert app info
-INSERT INTO app_info (app_name, version) VALUES 
-    ('FastAPI MySQL DevOps', '1.0.0')
-ON DUPLICATE KEY UPDATE version=version;
+INSERT INTO users (name, email, role, status) VALUES
+('Admin User', 'admin@example.com', 'admin', 'active'),
+('John Doe', 'john@example.com', 'user', 'active'),
+('Jane Smith', 'jane@example.com', 'moderator', 'active'),
+('Bob Wilson', 'bob@example.com', 'user', 'inactive');

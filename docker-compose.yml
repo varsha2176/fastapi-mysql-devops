@@ -1,55 +1,48 @@
-services:
-  # FastAPI Application
-  app:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-    container_name: fastapi-app
-    ports:
-      - "8000:8000"
-    environment:
-      MYSQL_HOST: db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: rootpassword
-      MYSQL_DATABASE: fastapidb
-      MYSQL_PORT: 3306
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - app-network
-    volumes:
-      - ./app:/app
+version: '3.8'
 
-  # MySQL Database
+services:
   db:
     image: mysql:8.0
     container_name: mysql-db
-    restart: unless-stopped
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: fastapidb
-      MYSQL_USER: appuser
-      MYSQL_PASSWORD: apppassword
+      MYSQL_DATABASE: testdb
     ports:
       - "3306:3306"
     volumes:
-      - db_data:/var/lib/mysql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  app:
+    build: ./app
+    container_name: fastapi-app
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app
+      - ./admin:/app/admin  # Mount admin folder
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=rootpassword
+      - DB_NAME=testdb
+
+volumes:
+  mysql_data:
 
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  db_data:
-    driver: local
